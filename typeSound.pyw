@@ -109,7 +109,7 @@ def listen(event):
         global nextSound
         if (osu.enabled and key in tapKeys):
             nextSound = hitsound
-            tapVol = 2
+            tapVol = 4
             balanceVol(tapVol)
         if (kl.enabled):
             balanceVol(1)
