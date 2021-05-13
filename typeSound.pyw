@@ -28,7 +28,7 @@ def balanceVol():
     #maxVol = 0.0
     #minVol = -65.25
     curr = volume.GetMasterVolumeLevel()
-    factor = (curr - 0.2)/(-50)
+    factor = (curr - 0.2)/(-30*(1 + curr*(curr+30)/(-60)))
     pygame.mixer.music.set_volume(factor)
 
 
@@ -77,7 +77,7 @@ def on_press(key):
     if (kl.enabled):
         global nextSound
         balanceVol()
-        pygame.mixer.music.load(nextSound) 
+        pygame.mixer.music.load(nextSound)
         pygame.mixer.music.play()
         nextSound = sounds[randrange(n)]
     try:
