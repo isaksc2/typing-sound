@@ -24,6 +24,9 @@ import random
 
 # load sound files
 sounds = glob.glob("sounds/*")
+hitsound = glob.glob("hitsound/*")[0]
+tapKeys = ["z", "x"]
+
 n = len(sounds)
 """
 freqs = [None]*n
@@ -50,11 +53,11 @@ volume = cast(interface, POINTER(IAudioEndpointVolume))
 
 
 # valance volume depending on system volume
-def balanceVol():
+def balanceVol(modifier):
     #maxVol = 0.0
     #minVol = -65.25
     curr = volume.GetMasterVolumeLevel()
-    factor = (curr - 0.2)/(-30*(1 + curr*(curr+30)/(-60)))
+    factor = (curr - 0.2)/(-30*(1 + curr*(curr+30)/(-90)))*modifier
     pygame.mixer.music.set_volume(factor)
 
 
@@ -65,11 +68,11 @@ def balanceVol():
 
 # listen for settings change
 class KeyLoggerXD:
-    def __init__(self):
+    def __init__(self, enablePhrase, disablePhrase):
         print("init")
 
-        self.enable  =   "enable sound"
-        self.disable =  "disable sound"
+        self.enable  =   enablePhrase
+        self.disable =  disablePhrase
 
         self.enableLen = len(self.enable)
         self.disableLen = len(self.disable)
@@ -102,16 +105,23 @@ def listen(event):
         key = event.name
         if (key == "space"):
             key = " "
-        # if enabled, play sound
+
+        global nextSound
+        if (osu.enabled and key in tapKeys):
+            nextSound = hitsound
+            tapVol = 2
+            balanceVol(tapVol)
         if (kl.enabled):
+            balanceVol(1)
+        # if enabled, play sound
+        if (kl.enabled or osu.enabled):
             #global nextFreq
 
             #speed = random.uniform(0.2, 1)
             #nextFreq = round(nextFreq*speed)
             #pygame.mixer.quit()
             
-            global nextSound
-            balanceVol()
+            
             pygame.mixer.music.load(nextSound)
             pygame.mixer.music.play()
             r = randrange(n)
@@ -148,10 +158,12 @@ def listen(event):
             #pygame.mixer.quit()
             #pygame.mixer.init(frequency = nextFreq)
         kl.startStop(key)
+        osu.startStop(key)
 
 
 
 # start
-kl = KeyLoggerXD()
+osu = KeyLoggerXD("enable osu", "disable osu")
+kl = KeyLoggerXD("enable sound", "disable sound")
 keyboard.hook(listen) 
 keyboard.wait() 
