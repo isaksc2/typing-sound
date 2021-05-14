@@ -1,5 +1,3 @@
-from __future__ import print_function
-from pynput import keyboard
 import glob
 from random import randrange
 import pygame
@@ -7,17 +5,9 @@ from pygame import mixer
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
-import librosa
-import wave
-import sounddevice as sdada
-import soundfile as sf
-from multiprocessing import Process, Event
-import time
-from pynput.keyboard import Listener
 import keyboard
 import string
 from threading import *
-import random
 import math
 
 
@@ -25,20 +15,15 @@ import math
 
 # load sound files
 sounds = glob.glob("sounds/*")
+n = len(sounds)
 hitsound = glob.glob("hitsound/*")[0]
 tapKeys = ["z", "x"]
-
-n = len(sounds)
-"""
-freqs = [None]*n
-for i in range(n):
-    freqs[i] = wave.open(sounds[i]).getframerate()
-"""
-r = randrange(n)
-nextSound = sounds[r]
-#nextFreq = freqs[r]
-
 pygame.mixer.init()
+
+
+
+
+
 
 
 # read system sound level
@@ -48,32 +33,21 @@ interface = devices.Activate(
 volume = cast(interface, POINTER(IAudioEndpointVolume))
 
 
-#y, sr = librosa.load(nextSound)
-#waveform = librosa.effects.time_stretch(y, 2.0)
 
-
-
-# valance volume depending on system volume
+# balance volume depending on system volume
 def balanceVol(modifier):
     #maxVol = 0.0
     #minVol = -65.25
-    curr = volume.GetMasterVolumeLevel()
-    """
-    try:
-        c = math.log(curr - minVol)
-    except:
-        c = 1
-    factor = 1/(c*200)
-    """
-    factor = (curr - 0.2)/(-30*(1 + curr*(curr+30)/(-90)))*modifier
-    """
-    desired = -55
-    if (curr == 0):
-        factor = -1/desired
+    db = volume.GetMasterVolumeLevel()
+    # convert decibel to windows audio percentage
+    percentage = math.exp(db*0.06555043 + 4.62041325) -1.56777232
+    if (percentage < 12):
+        factor = 1
     else:
-        factor = (1/desired)*curr
-    """
-    pygame.mixer.music.set_volume(factor)
+        # normalize volume
+        log = math.log(percentage)
+        factor = 70/(percentage*log*log)
+    pygame.mixer.music.set_volume(factor*modifier)
 
 
 
@@ -81,7 +55,7 @@ def balanceVol(modifier):
 
 
 
-# listen for settings change
+# listen for sequence of letters and toggle corresponding settigns
 class KeyLoggerXD:
     def __init__(self, enablePhrase, disablePhrase):
 
@@ -100,20 +74,25 @@ class KeyLoggerXD:
         self.nextIndex = 0
         self.enabled = True
 
+    # match letter to sequence
     def startStop(self, key):
+        # if key is the next letter in sequence...
         if (key == self.buffer[self.nextIndex]):
+            # prepare for next key
             self.nextIndex = self.nextIndex + 1
+            # if the entire sequence was matched, toggle "enabled"
             if (self.nextIndex == self.bufferLen):
                 self.nextIndex = 0
                 self.enabled = not self.enabled
                 self.buffer = self.buffers[self.enabled]
                 self.bufferLen = self.bufferLens[self.enabled]
         else:
+            # restart if key didnt match
             self.nextIndex = 0
 
 
 
-
+# listen for keypress
 def listen(event):
     if event.event_type == "down": 
         key = event.name
@@ -121,64 +100,27 @@ def listen(event):
             key = " "
 
         global nextSound
+        # load hitsound
         if (osu.enabled and key in tapKeys):
             nextSound = hitsound
             tapVol = 0.5
             balanceVol(tapVol)
-        elif (kl.enabled):
+        # loas type sound
+        elif (typing.enabled):
             r = randrange(n)
             nextSound = sounds[r]
             balanceVol(1)
         # if enabled, play sound
-        if (kl.enabled):
-            #global nextFreq
-
-            #speed = random.uniform(0.2, 1)
-            #nextFreq = round(nextFreq*speed)
-            #pygame.mixer.quit()
-            
-            
+        if (typing.enabled):
             pygame.mixer.music.load(nextSound)
             pygame.mixer.music.play()
-            
-
-
-            
-            #sd.play(y, nextFreq)
-            #sound = pygame.sndarray.make_sound(waveform)
-            #sound.play()
-
-
-
-            #nextFreq = freqs[r]
-
-
-
-            #y, sr = librosa.load(nextSound, sr=16000) # y is a numpy array of the wav file, sr = sample rate
-            #y_shifted = librosa.effects.pitch_shift(y, sr, n_steps=4) # shifted by 4 half steps
-            #pygame.init()
-            #wave = numpy.array([[1,1], [2,2], [3,3]], dtype="int64") # default
-            #sound = pygame.sndarray.make_sound(y_shifted)
-            #sound.play()
-
-            #y, sr = sf.read(nextSound)
-            #y_stretch = pyrubberband.time_stretch(y, sr, 2.0)
-            #sps = nextFreq
-            #sd.play(y, sps)
-            #time.sleep(1)
-
-            
-            #nextFreq = freqs[r]
-            #nextFreq = round(freqs[r]*0.5)
-            #pygame.mixer.quit()
-            #pygame.mixer.init(frequency = nextFreq)
-        kl.startStop(key)
+        typing.startStop(key)
         osu.startStop(key)
 
 
 
 # start
 osu = KeyLoggerXD("enable osu", "disable osu")
-kl = KeyLoggerXD("enable sound", "disable sound")
+typing = KeyLoggerXD("enable sound", "disable sound")
 keyboard.hook(listen) 
 keyboard.wait() 
