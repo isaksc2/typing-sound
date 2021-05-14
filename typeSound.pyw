@@ -73,7 +73,6 @@ def balanceVol(modifier):
     else:
         factor = (1/desired)*curr
     """
-    print(curr, factor)
     pygame.mixer.music.set_volume(factor)
 
 
@@ -85,7 +84,6 @@ def balanceVol(modifier):
 # listen for settings change
 class KeyLoggerXD:
     def __init__(self, enablePhrase, disablePhrase):
-        print("init")
 
         self.enable  =   enablePhrase
         self.disable =  disablePhrase
@@ -128,9 +126,11 @@ def listen(event):
             tapVol = 0.5
             balanceVol(tapVol)
         elif (kl.enabled):
+            r = randrange(n)
+            nextSound = sounds[r]
             balanceVol(1)
         # if enabled, play sound
-        if (kl.enabled or osu.enabled):
+        if (kl.enabled):
             #global nextFreq
 
             #speed = random.uniform(0.2, 1)
@@ -140,8 +140,7 @@ def listen(event):
             
             pygame.mixer.music.load(nextSound)
             pygame.mixer.music.play()
-            r = randrange(n)
-            nextSound = sounds[r]
+            
 
 
             
