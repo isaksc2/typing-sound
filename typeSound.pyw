@@ -18,6 +18,7 @@ import keyboard
 import string
 from threading import *
 import random
+import math
 
 
 
@@ -57,7 +58,22 @@ def balanceVol(modifier):
     #maxVol = 0.0
     #minVol = -65.25
     curr = volume.GetMasterVolumeLevel()
+    """
+    try:
+        c = math.log(curr - minVol)
+    except:
+        c = 1
+    factor = 1/(c*200)
+    """
     factor = (curr - 0.2)/(-30*(1 + curr*(curr+30)/(-90)))*modifier
+    """
+    desired = -55
+    if (curr == 0):
+        factor = -1/desired
+    else:
+        factor = (1/desired)*curr
+    """
+    print(curr, factor)
     pygame.mixer.music.set_volume(factor)
 
 
@@ -109,9 +125,9 @@ def listen(event):
         global nextSound
         if (osu.enabled and key in tapKeys):
             nextSound = hitsound
-            tapVol = 4
+            tapVol = 0.5
             balanceVol(tapVol)
-        if (kl.enabled):
+        elif (kl.enabled):
             balanceVol(1)
         # if enabled, play sound
         if (kl.enabled or osu.enabled):
