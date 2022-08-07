@@ -74,6 +74,8 @@ class KeyLoggerXD:
         self.nextIndex = 0
         self.enabled = True
 
+        self.prev = None
+
     # match letter to sequence
     def startStop(self, key):
         # if key is the next letter in sequence...
@@ -94,6 +96,9 @@ class KeyLoggerXD:
 
 # listen for keypress
 def listen(event):
+    if typing.prev == event:
+        return
+    typing.prev = event
     if event.event_type == "down": 
         key = event.name
         if (key == "space"):
